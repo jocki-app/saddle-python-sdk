@@ -1,5 +1,5 @@
 name: Python SDK
-on: [push, pull_request]
+on: [push, pull_request, workflow_call]
 permissions:
   contents: read
 jobs:
@@ -16,3 +16,26 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install .
       - run: python -m unittest discover -s tests
+  runtime:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: jocki-app/saddle-cli
+          ref: d587f0ff1e0cb18d74ff5e3ab3c03f4c28e1f011
+          path: runtime
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26.10.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: npm ci
+        working-directory: runtime
+      - run: python -m pip install .
+      - name: Verify native records and canonical history in both directions
+        env:
+          SADDLE_CLI: ${{ github.workspace }}/runtime/bin/saddle.mjs
+        run: python -m unittest discover -s tests
