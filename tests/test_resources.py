@@ -8,6 +8,9 @@ class ResourceTests(unittest.TestCase):
         with self.assertRaises(SaddleError):import_metadata('notes.md','---\ntag: personal\n---\n',value)
         for path in ['../outside','file:///outside','https:broken']:
             with self.assertRaises(SaddleError):resource(dict(name='x',path=path))
+    def test_inline_dates_are_json_text_and_boolean_words_remain_text(self):
+        properties=import_metadata('a.md','---\ndate: 2026-11-22\nanswer: yes\nenabled: true\n---\n')['properties']
+        self.assertEqual(properties,dict(date='2026-11-22',answer='yes',enabled=True))
     def test_feature_overrides_and_boundaries(self):
         policy=dict(vault=dict(history=True),folders={'a':{'history':False}},files={'f':{'sync':True}})
         self.assertEqual(effective_features(policy,{},'a/file','f'),{'history':False,'sync':True})

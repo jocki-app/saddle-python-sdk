@@ -64,7 +64,10 @@ def import_metadata(path,source='',descriptor=None):
         match=re.match(r'^---\s*\n([\s\S]*?)\n---(?:\n|$)',source)
         if match:
             import yaml
-            inline=yaml.safe_load(match[1])
+            class JSONLoader(yaml.SafeLoader):
+                yaml_implicit_resolvers={key:[pair for pair in values if pair[0] not in ('tag:yaml.org,2002:timestamp','tag:yaml.org,2002:bool')] for key,values in yaml.SafeLoader.yaml_implicit_resolvers.items()}
+            JSONLoader.add_implicit_resolver('tag:yaml.org,2002:bool',re.compile(r'^(?:true|True|TRUE|false|False|FALSE)$'),list('tTfF'))
+            inline=yaml.load(match[1],Loader=JSONLoader)
             if not isinstance(inline,dict):raise SaddleError('Markdown properties must be a YAML map')
     _json(inline)
     properties={};links=[]
