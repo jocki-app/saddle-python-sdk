@@ -32,8 +32,11 @@ class Runtime:
     def delete_version(self,target,version):return self.request('history.delete',target,hash=version)
     def metadata(self,target):return self.request('metadata.get',target)
     def set_metadata(self,target,value):return self.request('metadata.set',target,value=value)
+    def contact(self,target):return self.request('sharing.contact',target)['contact']
     def shares(self,target):return self.request('sharing.list',target)
     def invite(self,target):return self.request('sharing.invite',target)
     def join(self,target,invitation):return self.request('sharing.join',target,invitation=invitation)
     def grant(self,target,invitation,contact,role='read'):return self.request('sharing.grant',target,invitation=invitation,contact=contact,role=role)
-    def broadcast(self,target,invitation,enabled):return self.request('sharing.broadcast',target,invitation=invitation,broadcast=bool(enabled))
+    def broadcast(self,target,invitation,enabled):
+        if type(enabled) is not bool:raise SaddleError('Broadcast must be a boolean')
+        return self.request('sharing.broadcast',target,invitation=invitation,broadcast=enabled)

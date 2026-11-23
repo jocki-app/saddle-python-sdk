@@ -19,7 +19,7 @@ class SaddleError(ValueError):
     """An invalid archive, unsafe path, or conflicting operation."""
 
 def record_name(value: str) -> str:
-    if not isinstance(value, str) or not value or value.startswith('/') or '\\' in value or any(ord(c)<32 or c==':' for c in value):
+    if not isinstance(value, str) or not value or value.startswith('/') or '\\' in value or any(ord(c)<32 or ord(c)==127 or c==':' for c in value):
         raise SaddleError('Expected a portable relative record name')
     if any(p in ('', '.', '..') or p.lower()=='.saddle' for p in value.split('/')):
         raise SaddleError('Invalid or reserved record name')

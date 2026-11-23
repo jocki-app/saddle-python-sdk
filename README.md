@@ -39,3 +39,7 @@ SADDLE_CLI=/path/to/saddle-cli/bin/saddle.mjs SADDLE_NODE=/path/to/node PYTHONPA
 The second command additionally tests bidirectional TypeScript/Python archives, real history, metadata, cleanup and the single-file scope boundary. See the [SADDLE specification](https://github.com/jocki-app/saddle-specification).
 
 GPL-3.0-only. See [LICENSE](LICENSE).
+
+Release procedure and registry setup: [releases](docs/releases.md).
+
+Signatures, errors and the native/runtime boundary: [public API](docs/api.md). Shared specification cases are pinned in [conformance/source.json](conformance/source.json).

@@ -1,0 +1,11 @@
+# Public API and implementation boundary
+
+`Archive(path)` is native Python and uses opaque bytes, not a substitute history format. `names()` lists records; `read(name)` returns bytes or `None`; `write(name, bytes, append=False, heads=None, num_changes=None)` commits a payload; `remove`, `compact`, `verify`, `inspect`, `get_json` and `set_json` provide record operations. Empty bytes are not a missing record. Corruption raises `SaddleError` (a `ValueError`). All writes flush the committed data/index and publication slot before returning.
+
+`companion_path`, `new_resource`, `resource`, `import_metadata` and `effective_features` implement naming, Resource core validation, Markdown conversion/conflicts and inherited policies. `resource` returns a validated copy. Metadata conflict errors reject the combined result. Native writes require coordination with other applications’ root writer leases; use `Runtime` for live/history-backed units.
+
+`Runtime(command=None, profile=None, timeout=60)` calls an explicitly installed SADDLE CLI without a shell. `inspect`, `history`, `configure`, `reset_history`, `delete_version`, `metadata`, `set_metadata`, `contact`, `shares`, `invite`, `join`, `grant` and `broadcast` use the canonical Automerge/Keyhive engine. `request(method, target, **options)` exposes the documented JSON operation fields. Targets and profiles accept filesystem paths; `command` is an argument list. Broadcast requires a Python boolean. A CLI error, invalid response or failed request raises `SaddleError`; subprocess timeouts remain `TimeoutExpired`.
+
+For long-running synchronization use `saddle share serve` (or the TypeScript cancellation API), rather than a blocking Python `request` with a short timeout. The Python wheel does not bundle Node or a second CRDT implementation. The native archive/metadata profile works without Node; distributed history/exchange needs the separately installed CLI.
+
+`conformance/source.json` pins the same normative cases as TypeScript. Run `PYTHONPATH=src python -m unittest discover -s tests`; set `SADDLE_CLI` and optionally `SADDLE_NODE` to additionally run bidirectional archive and canonical runtime integration tests. See [releases](releases.md) for wheels, source archives and trusted publishing.

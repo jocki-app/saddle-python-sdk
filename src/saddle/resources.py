@@ -51,6 +51,8 @@ def resource(value):
     for key in ('metadata','saddle'):
         if key in value and not isinstance(value[key],dict):raise SaddleError(key+' must be an object')
     if 'contentType' in value.get('saddle',{}) and (not isinstance(value['saddle']['contentType'],str) or not value['saddle']['contentType'].strip()):raise SaddleError('saddle.contentType must be nonempty text')
+    for key in ('title','description','format','mediatype','encoding','$schema'):
+        if key in value and not isinstance(value[key],str):raise SaddleError(key+' must be a string')
     return deepcopy(value)
 
 def new_resource(path):
@@ -61,12 +63,36 @@ def new_resource(path):
 def import_metadata(path,source='',descriptor=None):
     inline={}
     if str(path).lower().endswith('.md'):
-        match=re.match(r'^---\s*\n([\s\S]*?)\n---(?:\n|$)',source)
+        match=re.match(r'^(?:\ufeff)?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)',source)
         if match:
             import yaml
             class JSONLoader(yaml.SafeLoader):
-                yaml_implicit_resolvers={key:[pair for pair in values if pair[0] not in ('tag:yaml.org,2002:timestamp','tag:yaml.org,2002:bool')] for key,values in yaml.SafeLoader.yaml_implicit_resolvers.items()}
+                yaml_implicit_resolvers={key:[pair for pair in values if pair[0] not in ('tag:yaml.org,2002:timestamp','tag:yaml.org,2002:bool','tag:yaml.org,2002:int','tag:yaml.org,2002:float')] for key,values in yaml.SafeLoader.yaml_implicit_resolvers.items()}
+                aliases=0
+                def compose_node(self,parent,index):
+                    if self.check_event(yaml.AliasEvent):
+                        self.aliases+=1
+                        if self.aliases>20:raise SaddleError('Too many YAML aliases')
+                    return super().compose_node(parent,index)
+                def construct_mapping(self,node,deep=False):
+                    result={}
+                    for key_node,value_node in node.value:
+                        key=self.construct_object(key_node,deep=deep)
+                        if not isinstance(key,str):
+                            if key is None:key='null'
+                            elif type(key) is bool:key=str(key).lower()
+                            elif type(key) in (int,float):key=str(key)
+                            else:raise SaddleError('Metadata keys must be scalar JSON text')
+                        if key in result:raise SaddleError('Duplicate YAML property: '+key)
+                        result[key]=self.construct_object(value_node,deep=deep)
+                    return result
             JSONLoader.add_implicit_resolver('tag:yaml.org,2002:bool',re.compile(r'^(?:true|True|TRUE|false|False|FALSE)$'),list('tTfF'))
+            JSONLoader.add_implicit_resolver('tag:yaml.org,2002:int',re.compile(r'^(?:[-+]?[0-9]+|0o[0-7]+|0x[0-9a-fA-F]+)$'),list('-+0123456789'))
+            JSONLoader.add_implicit_resolver('tag:yaml.org,2002:float',re.compile(r'^(?:[-+]?(?:[0-9]+\.[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?|[-+]?[0-9]+[eE][-+]?[0-9]+|[-+]?\.(?:inf|Inf|INF)|\.(?:nan|NaN|NAN))$'),list('-+0123456789.'))
+            def integer(loader,node):
+                text=loader.construct_scalar(node)
+                return int(text,8 if text.startswith('0o') else 16 if text.startswith('0x') else 10)
+            JSONLoader.add_constructor('tag:yaml.org,2002:int',integer)
             inline=yaml.load(match[1],Loader=JSONLoader)
             if not isinstance(inline,dict):raise SaddleError('Markdown properties must be a YAML map')
     _json(inline)
